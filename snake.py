@@ -119,14 +119,15 @@ while running:
 
     # Check for game over
     if (
-        head_rect.left < 0 or head_rect.right > WINDOW_WIDTH or
-        head_rect.top < 0 or head_rect.bottom > WINDOW_HEIGHT or
+        head_x + SNAKE_SIZE <= 0 or head_x >= WINDOW_WIDTH or
+        head_y + SNAKE_SIZE <= 0 or head_y >= WINDOW_HEIGHT or
         head_coord in body_coords
     ):
         # Check high score
         if score > int(high_score):
             with open('high_score.txt', 'w') as file:
                 file.write(str(score))
+            high_score = score
             display_surface.blit(new_high_score_txt, new_high_score_rect)
 
         display_surface.blit(game_over_txt, game_over_rect)
@@ -140,7 +141,7 @@ while running:
             for event in pygame.event.get():
                 # Play again
                 if event.type == pygame.KEYDOWN:
-                    high_score_txt = small_font.render(f"High Score {str(score)}", True, GREEN, DARK_RED)
+                    high_score_txt = small_font.render(f"High Score {str(high_score)}", True, GREEN, DARK_RED)
 
                     score = 0
                     head_x = CENTER_X
