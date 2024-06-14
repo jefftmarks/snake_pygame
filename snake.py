@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, csv
 from colors import *
 
 pygame.init()
@@ -29,8 +29,12 @@ snake_dy = 0
 
 score = 0
 
+with open('high_score.txt') as file:
+    high_score = file.read()
+
 # Set fonts
 font = pygame.font.Font('assets/LcdPhone-wgZ2.ttf', 48)
+small_font = pygame.font.Font('assets/LcdPhone-wgZ2.ttf', 32)
 
 # Set text
 title_txt = font.render("Snake", True, GREEN, DARK_RED)
@@ -41,9 +45,17 @@ score_txt = font.render(f"Score {str(score)}", True, GREEN, DARK_RED)
 score_rect = score_txt.get_rect()
 score_rect.topleft = (10, 10)
 
+high_score_txt = small_font.render(f"High Score {str(high_score)}", True, GREEN, DARK_RED)
+high_score_rect = high_score_txt.get_rect()
+high_score_rect.bottomleft = (10, WINDOW_HEIGHT - 10)
+
 game_over_txt = font.render(f"GAME OVER", True, RED, DARK_GREEN)
 game_over_rect = game_over_txt.get_rect()
 game_over_rect.center = (CENTER_X, CENTER_Y)
+
+new_high_score_txt = font.render(f"NEW HIGH SCORE", True, RED, DARK_GREEN)
+new_high_score_rect = new_high_score_txt.get_rect()
+new_high_score_rect.center = (CENTER_X, CENTER_Y - 64)
 
 continue_txt_1 = font.render("Press any key", True, RED, DARK_GREEN)
 continue_rect_1 = continue_txt_1.get_rect()
@@ -80,17 +92,21 @@ while running:
         if event.type == pygame.KEYDOWN:
             match event.key:
                 case pygame.K_LEFT:
-                    snake_dx = -1 * SNAKE_SIZE
-                    snake_dy = 0
+                    if snake_dx == 0:
+                        snake_dx = -1 * SNAKE_SIZE
+                        snake_dy = 0
                 case pygame.K_RIGHT:
-                    snake_dx = SNAKE_SIZE
-                    snake_dy = 0
+                    if snake_dx == 0:
+                        snake_dx = SNAKE_SIZE
+                        snake_dy = 0
                 case pygame.K_UP:
-                    snake_dx = 0
-                    snake_dy = -1 * SNAKE_SIZE
+                    if snake_dy == 0:
+                        snake_dx = 0
+                        snake_dy = -1 * SNAKE_SIZE
                 case pygame.K_DOWN:
-                    snake_dx = 0
-                    snake_dy = SNAKE_SIZE
+                    if snake_dy == 0:
+                        snake_dx = 0
+                        snake_dy = SNAKE_SIZE
 
     # Add head coordinate to first index of the body coordinate
     body_coords.insert(0, head_coord)
@@ -107,6 +123,12 @@ while running:
         head_rect.top < 0 or head_rect.bottom > WINDOW_HEIGHT or
         head_coord in body_coords
     ):
+        # Check high score
+        if score > int(high_score):
+            with open('high_score.txt', 'w') as file:
+                file.write(str(score))
+            display_surface.blit(new_high_score_txt, new_high_score_rect)
+
         display_surface.blit(game_over_txt, game_over_rect)
         display_surface.blit(continue_txt_1, continue_rect_1)
         display_surface.blit(continue_txt_2, continue_rect_2)
@@ -118,6 +140,8 @@ while running:
             for event in pygame.event.get():
                 # Play again
                 if event.type == pygame.KEYDOWN:
+                    high_score_txt = small_font.render(f"High Score {str(score)}", True, GREEN, DARK_RED)
+
                     score = 0
                     head_x = CENTER_X
                     head_y = CENTER_Y + 100
@@ -140,12 +164,15 @@ while running:
         pick_up_sound.play()
 
         # Move apple
+        apple_in_body = True
+        while apple_in_body:
+            apple_x = random.randint(0, WIDTH_INTERVALS) * SNAKE_SIZE
+            apple_y = random.randint(0, HEIGHT_INTERVALS) * SNAKE_SIZE
+            apple_coord = set_coord(apple_x, apple_y)
 
-        apple_x = random.randint(0, WIDTH_INTERVALS) * SNAKE_SIZE
-        apple_y = random.randint(0, HEIGHT_INTERVALS) * SNAKE_SIZE
-        apple_coord = set_coord(apple_x, apple_y)
-
-        body_coords.append(head_coord)
+            if apple_coord not in body_coords:
+                body_coords.append(head_coord)
+                apple_in_body = False
 
     # Update HUD
     score_txt = font.render(f"Score {score}", True, GREEN, DARK_RED)
@@ -156,6 +183,7 @@ while running:
     # Blit HUD
     display_surface.blit(title_txt, title_rect)
     display_surface.blit(score_txt, score_rect)
+    display_surface.blit(high_score_txt, high_score_rect)
 
     # Blit assets
     head_rect = pygame.draw.rect(display_surface, GREEN, head_coord)
